@@ -8,8 +8,6 @@ import { minimatch } from 'minimatch';
 const GITHUB_TOKEN: string = core.getInput("GITHUB_TOKEN");
 const OPENAI_API_KEY: string = core.getInput("OPENAI_API_KEY");
 const OPENAI_API_MODEL: string = core.getInput("OPENAI_API_MODEL");
-console.log("teste")
-console.log(OPENAI_API_MODEL)
 
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
@@ -190,7 +188,8 @@ async function main() {
   const eventData = JSON.parse(
     readFileSync(process.env.GITHUB_EVENT_PATH ?? "", "utf8")
   );
-
+  console.log("teste")
+  console.log(OPENAI_API_MODEL)
   if (eventData.action === "opened") {
     diff = await getDiff(
       prDetails.owner,
@@ -228,7 +227,7 @@ async function main() {
     .getInput("exclude")
     .split(",")
     .map((s) => s.trim());
-
+  console.log(excludePatterns)
   const filteredDiff = parsedDiff.filter((file) => {
     return !excludePatterns.some((pattern) =>
       minimatch(file.to ?? "", pattern)
