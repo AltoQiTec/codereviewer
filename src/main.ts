@@ -128,7 +128,7 @@ async function getAIResponse(prompt: string): Promise<Array<{
   try {
     const response = await openai.chat.completions.create({
       ...queryConfig,      
-      ...{ response_format: { type: "json_object" } }, // return JSON (available on gpt-4)
+      response_format: { type: "json_object" }, // return JSON (available on gpt-4)
       messages: [
         {
           role: "system",
