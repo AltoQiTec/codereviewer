@@ -3,11 +3,13 @@ import * as core from "@actions/core";
 import OpenAI from "openai";
 import { Octokit } from "@octokit/rest";
 import parseDiff, { Chunk, File } from "parse-diff";
-import minimatch from "minimatch";
+import { minimatch } from 'minimatch';
 
 const GITHUB_TOKEN: string = core.getInput("GITHUB_TOKEN");
 const OPENAI_API_KEY: string = core.getInput("OPENAI_API_KEY");
 const OPENAI_API_MODEL: string = core.getInput("OPENAI_API_MODEL");
+console.log("teste")
+console.log(OPENAI_API_MODEL)
 
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
@@ -83,6 +85,7 @@ function createPrompt(file: File, chunk: Chunk, prDetails: PRDetails): string {
 - Provide the response in following JSON format:  {"reviews": [{"lineNumber":  <line_number>, "reviewComment": "<review comment>"}]}
 - Do not give positive comments or compliments.
 - Provide comments and suggestions ONLY if there is something to improve, otherwise "reviews" should be an empty array.
+- Start all suggestions com "Banki says"
 - Write the comment in GitHub Markdown format.
 - Use the given description only for the overall context and only comment the code.
 - IMPORTANT: NEVER suggest adding comments to the code.
