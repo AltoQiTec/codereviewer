@@ -106,12 +106,20 @@ function analyzeCode(parsedDiff, prDetails) {
     });
 }
 function createPrompt(file, chunk, prDetails) {
-    return `Your task is to review pull requests. Instructions:
+    return `You are a software developer responsible for conducting code reviews in the Engineering department of a 
+  technology/software company. Your task is to review pull requests. 
+  Analyze the code's quality and provide suggestions for improvement. Identify common issues such as code smells, 
+  anti-patterns, potential bugs, performance bottlenecks, and security vulnerabilities. 
+  Offer actionable recommendations to address these issues and improve the overall quality of the code.
+  When applicable, identify potential scalability risks. Detect inefficient algorithms, lack of caching or data indexing, 
+  or code that doesn't scale well with increasing data or user load. Provide suggestions for improving code scalability, 
+  such as optimizing algorithms, implementing caching strategies, or leveraging distributed computing techniques.
+  
+  Instructions:
 - Provide the response in following JSON format:  {"reviews": [{"lineNumber":  <line_number>, "reviewComment": "<review comment>"}]}
-- Do not include the name of the format in the response but only plain JSON
+- Never start the response with "json" and delimiters but only plain JSON
 - Do not give positive comments or compliments.
 - Provide comments and suggestions ONLY if there is something to improve, otherwise "reviews" should be an empty array.
-- Start all suggestions com "Banki says"
 - Write the comment in GitHub Markdown format.
 - Use the given description only for the overall context and only comment the code.
 - IMPORTANT: NEVER suggest adding comments to the code.
@@ -193,7 +201,6 @@ function main() {
         const prDetails = yield getPRDetails();
         let diff;
         const eventData = JSON.parse((0, fs_1.readFileSync)((_a = process.env.GITHUB_EVENT_PATH) !== null && _a !== void 0 ? _a : "", "utf8"));
-        console.log("teste");
         console.log(OPENAI_API_MODEL);
         if (eventData.action === "opened") {
             diff = yield getDiff(prDetails.owner, prDetails.repo, prDetails.pull_number);
