@@ -3,7 +3,7 @@ import * as core from "@actions/core";
 import OpenAI from "openai";
 import { Octokit } from "@octokit/rest";
 import parseDiff, { Chunk, File } from "parse-diff";
-import { minimatch } from 'minimatch';
+import { minimatch } from "minimatch";
 
 const GITHUB_TOKEN: string = core.getInput("GITHUB_TOKEN");
 const OPENAI_API_KEY: string = core.getInput("OPENAI_API_KEY");
@@ -58,18 +58,20 @@ async function getDiff(
 
 async function analyzeCode(
   parsedDiff: File[],
-  prDetails: PRDetails
+  prDetails: PRDetails,
+  extraInstructions: string[]
 ): Promise<Array<{ body: string; path: string; line: number }>> {
   const comments: Array<{ body: string; path: string; line: number }> = [];
 
   for (const file of parsedDiff) {
     if (file.to === "/dev/null") continue; // Ignore deleted files
     for (const chunk of file.chunks) {
-      const prompt = createPrompt(file, chunk, prDetails);
+      const prompt = createPrompt(file, chunk, prDetails, extraInstructions);
       const aiResponse = await getAIResponse(prompt);
       if (aiResponse) {
         const newComments = createComment(file, chunk, aiResponse);
         if (newComments) {
+          console.log("newComments: ", newComments);
           comments.push(...newComments);
         }
       }
@@ -78,7 +80,12 @@ async function analyzeCode(
   return comments;
 }
 
-function createPrompt(file: File, chunk: Chunk, prDetails: PRDetails): string {
+function createPrompt(
+  file: File,
+  chunk: Chunk,
+  prDetails: PRDetails,
+  extraInstructions: string[]
+): string {
   return `You are a software developer responsible for conducting code reviews in the Engineering department of a 
   technology/software company. Your task is to review pull requests. 
   Analyze the code's quality and provide suggestions for improvement. Identify common issues such as code smells, 
@@ -96,6 +103,7 @@ function createPrompt(file: File, chunk: Chunk, prDetails: PRDetails): string {
 - Write the comment in GitHub Markdown format.
 - Use the given description only for the overall context and only comment the code.
 - IMPORTANT: NEVER suggest adding comments to the code.
+${extraInstructions.map((instruction) => `- ${instruction}`).join("\n")}
 
 Review the following code diff in the file "${
     file.to
@@ -135,7 +143,7 @@ async function getAIResponse(prompt: string): Promise<Array<{
 
   try {
     const response = await openai.chat.completions.create({
-      ...queryConfig,      
+      ...queryConfig,
       response_format: { type: "json_object" }, // return JSON (available on gpt-4)
       messages: [
         {
@@ -146,7 +154,7 @@ async function getAIResponse(prompt: string): Promise<Array<{
     });
 
     const res = response.choices[0].message?.content?.trim() || "{}";
-    console.log(res)
+    console.log(res);
     return JSON.parse(res).reviews;
   } catch (error) {
     console.error("Error:", error);
@@ -195,7 +203,7 @@ async function main() {
   const eventData = JSON.parse(
     readFileSync(process.env.GITHUB_EVENT_PATH ?? "", "utf8")
   );
-  console.log(OPENAI_API_MODEL)
+  console.log(OPENAI_API_MODEL);
   if (eventData.action === "opened") {
     diff = await getDiff(
       prDetails.owner,
@@ -233,14 +241,24 @@ async function main() {
     .getInput("exclude")
     .split(",")
     .map((s) => s.trim());
-  console.log(excludePatterns)
+  console.log(excludePatterns);
   const filteredDiff = parsedDiff.filter((file) => {
     return !excludePatterns.some((pattern) =>
       minimatch(file.to ?? "", pattern)
     );
   });
 
-  const comments = await analyzeCode(filteredDiff, prDetails);
+  const extraInstructions = core
+    .getInput("instructions")
+    .split(",")
+    .map((s) => s.trim());
+  console.log(extraInstructions);
+
+  const comments = await analyzeCode(
+    filteredDiff,
+    prDetails,
+    extraInstructions
+  );
   if (comments.length > 0) {
     await createReviewComment(
       prDetails.owner,

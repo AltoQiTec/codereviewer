@@ -44,6 +44,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_API_MODEL: "gpt-4" # Optional: defaults to "gpt-4"
           exclude: "**/*.json, **/*.md" # Optional: exclude patterns separated by commas
+          extra-instructions: "Check if blah blah, Ignore blah blah" # Optional: give additional instructions separated by commas
 ```
 
 4. Replace `your-username` with your GitHub username or organization name where the AI Code Reviewer repository is
@@ -51,7 +52,9 @@ jobs:
 
 5. Customize the `exclude` input if you want to ignore certain file patterns from being reviewed.
 
-6. Commit the changes to your repository, and AI Code Reviewer will start working on your future pull requests.
+6. Customize the `extra-instructions` input if you want to add special instructions to the AI reviewer.
+
+7. Commit the changes to your repository, and AI Code Reviewer will start working on your future pull requests.
 
 ## How It Works
 

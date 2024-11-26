@@ -85,18 +85,19 @@ function getDiff(owner, repo, pull_number) {
         return response.data;
     });
 }
-function analyzeCode(parsedDiff, prDetails) {
+function analyzeCode(parsedDiff, prDetails, extraInstructions) {
     return __awaiter(this, void 0, void 0, function* () {
         const comments = [];
         for (const file of parsedDiff) {
             if (file.to === "/dev/null")
                 continue; // Ignore deleted files
             for (const chunk of file.chunks) {
-                const prompt = createPrompt(file, chunk, prDetails);
+                const prompt = createPrompt(file, chunk, prDetails, extraInstructions);
                 const aiResponse = yield getAIResponse(prompt);
                 if (aiResponse) {
                     const newComments = createComment(file, chunk, aiResponse);
                     if (newComments) {
+                        console.log("newComments: ", newComments);
                         comments.push(...newComments);
                     }
                 }
@@ -105,7 +106,7 @@ function analyzeCode(parsedDiff, prDetails) {
         return comments;
     });
 }
-function createPrompt(file, chunk, prDetails) {
+function createPrompt(file, chunk, prDetails, extraInstructions) {
     return `You are a software developer responsible for conducting code reviews in the Engineering department of a 
   technology/software company. Your task is to review pull requests. 
   Analyze the code's quality and provide suggestions for improvement. Identify common issues such as code smells, 
@@ -123,6 +124,7 @@ function createPrompt(file, chunk, prDetails) {
 - Write the comment in GitHub Markdown format.
 - Use the given description only for the overall context and only comment the code.
 - IMPORTANT: NEVER suggest adding comments to the code.
+${extraInstructions.map((instruction) => `- ${instruction}`).join("\n")}
 
 Review the following code diff in the file "${file.to}" and take the pull request title and description into account when writing the response.
   
@@ -236,7 +238,12 @@ function main() {
         const filteredDiff = parsedDiff.filter((file) => {
             return !excludePatterns.some((pattern) => { var _a; return (0, minimatch_1.minimatch)((_a = file.to) !== null && _a !== void 0 ? _a : "", pattern); });
         });
-        const comments = yield analyzeCode(filteredDiff, prDetails);
+        const extraInstructions = core
+            .getInput("instructions")
+            .split(",")
+            .map((s) => s.trim());
+        console.log(extraInstructions);
+        const comments = yield analyzeCode(filteredDiff, prDetails, extraInstructions);
         if (comments.length > 0) {
             yield createReviewComment(prDetails.owner, prDetails.repo, prDetails.pull_number, comments);
         }
