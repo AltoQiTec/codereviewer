@@ -93,6 +93,7 @@ function analyzeCode(parsedDiff, prDetails, extraInstructions) {
                 continue; // Ignore deleted files
             for (const chunk of file.chunks) {
                 const prompt = createPrompt(file, chunk, prDetails, extraInstructions);
+                console.log("Prompt: ", prompt);
                 const aiResponse = yield getAIResponse(prompt);
                 if (aiResponse) {
                     const newComments = createComment(file, chunk, aiResponse);
